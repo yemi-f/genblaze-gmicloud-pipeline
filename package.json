@@ -1,0 +1,22 @@
+{
+  "name": "genblaze-gmicloud-pipeline",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names web,api --prefix-colors blue,green \"pnpm dev:web\" \"pnpm dev:api\"",
+    "dev:web": "pnpm --filter @genblaze-gmicloud-pipeline/web dev",
+    "dev:api": "cd services/api && uvicorn main:app --reload --port 8000",
+    "build": "pnpm --filter @genblaze-gmicloud-pipeline/web build",
+    "lint": "pnpm --filter @genblaze-gmicloud-pipeline/web lint",
+    "lint:api": "cd services/api && .venv/bin/ruff check .",
+    "test:api": "cd services/api && .venv/bin/python -m pytest",
+    "check:structure": "cd services/api && .venv/bin/python -m pytest tests/test_structure.py -v",
+    "test:e2e": "pnpm --filter @genblaze-gmicloud-pipeline/web exec playwright test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}
