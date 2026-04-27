@@ -6,11 +6,13 @@ Engineering workflows for genblaze-gmicloud-pipeline.
 ## Setup
 
 ```bash
+# Credentials — single .env at the project root drives both services
+cp .env.example .env  # fill in credentials
+
 # Backend
 cd services/api
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # fill in credentials
 
 # Frontend
 cd ../..

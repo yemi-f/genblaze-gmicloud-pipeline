@@ -35,17 +35,19 @@ prompt → seedream-5.0-lite → (iterate / refine) → Approve
 git clone https://github.com/backblaze-labs/genblaze-gmicloud-pipeline.git
 cd genblaze-gmicloud-pipeline
 
-# 1. Backend — Python venv + deps
+# 1. Credentials — single .env at the project root
+cp .env.example .env       # then fill in credentials (see Configuration)
+
+# 2. Backend — Python venv + deps
 cd services/api
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env       # fill in credentials (see Configuration)
-
-# 2. Frontend — workspace deps
 cd ../..
+
+# 3. Frontend — workspace deps
 pnpm install
 
-# 3. Run both (Next.js :3000, FastAPI :8000)
+# 4. Run both (Next.js :3000, FastAPI :8000)
 pnpm dev
 ```
 
@@ -77,7 +79,8 @@ Open <http://localhost:3000> for the Studio. The API self-documents at
 
 ## Configuration
 
-Edit `services/api/.env`:
+A single `.env` at the project root drives both the FastAPI backend and any
+frontend env. Edit `.env`:
 
 ```env
 # Backblaze B2 — S3-compatible endpoint for the region your bucket lives in
@@ -97,7 +100,9 @@ aliases).
 
 A handful of optional knobs (local step cache, OpenTelemetry, completion
 webhook, CORS overrides) are documented inline in
-[`services/api/.env.example`](services/api/.env.example).
+[`.env.example`](.env.example). Pydantic Settings reads the root `.env` via
+an absolute path, so the API service finds it regardless of which directory
+`uvicorn` or `pytest` was launched from.
 
 ## Usage walkthrough
 
@@ -238,11 +243,10 @@ by the account root — until retention expires. See
 - **GMICloud 401 / 403** — `GMI_API_KEY` missing or expired; regenerate it in
   your [GMICloud](https://gmicloud.ai/) console.
 - **Same prompt always returns the same image** — that's the local step cache
-  (set via `STEP_CACHE_DIR` in `.env.example`). Delete the directory to force a
+  (set via `STEP_CACHE_DIR` in the root `.env`). Delete the directory to force a
   fresh GMI call.
-- **CORS errors from the web app** — set `API_CORS_ORIGINS` in
-  `services/api/.env` if your dev server runs on a different origin (see
-  `.env.example`).
+- **CORS errors from the web app** — set `API_CORS_ORIGINS` in the root
+  `.env` if your dev server runs on a different origin (see `.env.example`).
 - **`pnpm check:structure` fails after edits** — you've imported `genblaze_*`
   outside `repo/pipelines.py` or `boto3` somewhere in the sample source. See
   [AGENTS.md](AGENTS.md) for the layer rules.

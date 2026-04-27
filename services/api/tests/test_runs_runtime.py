@@ -79,12 +79,15 @@ async def test_get_manifest_uses_recorded_manifest_uri(client, monkeypatch):
 @pytest.mark.asyncio
 async def test_get_asset_not_found(client, monkeypatch):
     """GET /assets/{key} returns 404 when presign fails."""
-    from app.repo import pipelines as pipes
+    # Patch the binding actually resolved by the route (imported via
+    # `from app.repo import presign_asset_url` at module load time).
+    # Patching app.repo.pipelines.presign_asset_url alone is a no-op here.
+    from app.runtime import runs as runs_runtime
 
     def _raise(key, **kwargs):
         raise Exception("not found")
 
-    monkeypatch.setattr(pipes, "presign_asset_url", _raise)
+    monkeypatch.setattr(runs_runtime, "presign_asset_url", _raise)
 
     response = await client.get("/assets/runs/nope/image.jpg", follow_redirects=False)
     assert response.status_code == 404

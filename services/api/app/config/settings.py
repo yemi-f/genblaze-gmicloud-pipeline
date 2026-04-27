@@ -1,4 +1,13 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# Project root holds the canonical `.env` for the whole monorepo.
+# settings.py is at services/api/app/config/settings.py — climb 4 levels.
+# Computing this from __file__ keeps env loading independent of CWD,
+# so it works whether you run `pnpm dev`, `cd services/api && uvicorn`,
+# or pytest from any directory.
+_ROOT_ENV = Path(__file__).resolve().parents[4] / ".env"
 
 
 class Settings(BaseSettings):
@@ -26,7 +35,7 @@ class Settings(BaseSettings):
     # Next dev server falls back to :3001 when :3000 is busy; default allows both.
     api_cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(_ROOT_ENV), "env_file_encoding": "utf-8"}
 
     @property
     def cors_origins(self) -> list[str]:
