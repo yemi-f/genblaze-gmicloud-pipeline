@@ -127,7 +127,11 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      '@genblaze/spec':
+        specifier: 0.3.2
+        version: 0.3.2
 
 packages:
 
@@ -343,6 +347,9 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@genblaze/spec@0.3.2':
+    resolution: {integrity: sha512-x0y1M5y0DpDXf4MqCwU09Cqcm7RvR0+wuw3yHolzU5+tKD18RhGO4vww1ZEce0Ox6lTq+nmCn84OkOayZgoDbQ==}
 
   '@hono/node-server@1.19.9':
     resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
@@ -4313,6 +4320,8 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@genblaze/spec@0.3.2': {}
 
   '@hono/node-server@1.19.9(hono@4.11.9)':
     dependencies:

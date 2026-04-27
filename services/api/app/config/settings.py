@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     webhook_header_authorization: str = ""
 
     api_port: int = 8000
-    api_cors_origins: str = "http://localhost:3000"
+    # Next dev server falls back to :3001 when :3000 is busy; default allows both.
+    api_cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

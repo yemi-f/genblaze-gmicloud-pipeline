@@ -29,8 +29,9 @@ logger = logging.getLogger("api.runs")
 router = APIRouter()
 
 # In-memory store: run_id → PipelineResult. Sufficient for a session-scoped demo.
-# The manifest in B2 is the durable record; anyone with the run_id can re-derive
-# state from runs/{run_id}/manifest.json.
+# The manifest in B2 is the durable record; the actual storage key depends on
+# the sink's prefix + KeyStrategy, so we look up manifest_uri from the cached
+# result rather than reconstructing the key here.
 _run_store: dict[str, Any] = {}  # Any = PipelineResult (no direct genblaze import)
 
 
@@ -105,9 +106,14 @@ async def get_run(run_id: str):
 @router.get("/runs/{run_id}/manifest")
 async def get_manifest(run_id: str):
     """Serve the manifest JSON from B2 (the durable record of the run)."""
-    manifest_key = f"runs/{run_id}/manifest.json"
+    result = _run_store.get(run_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Run {run_id!r} not in session")
+    manifest_uri = result.manifest.manifest_uri
+    if not manifest_uri:
+        raise HTTPException(status_code=404, detail="Manifest URI not recorded for run")
     try:
-        data = fetch_manifest_bytes(manifest_key)
+        data = fetch_manifest_bytes(manifest_uri)
     except Exception as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return Response(content=data, media_type="application/json")

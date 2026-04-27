@@ -1,57 +1,26 @@
-// Shared types mirroring Genblaze's own models (Run, Step, Asset) and
-// the three request bodies the API accepts.
+// Canonical genblaze shapes come from @genblaze/spec — auto-generated from
+// the JSON Schemas that are conformance-tested against the Pydantic models.
+// Only sample-local types (request bodies, browser DTOs) are hand-rolled.
+//
+// StreamEvent is a discriminated union (spec 0.3.0+): narrow via `ev.type`
+// to get per-variant field types (e.g. StepFailedEvent.error,
+// PipelineCompletedEvent.manifest_hash).
+export type { Asset, Manifest, Run, Step, StreamEvent } from "@genblaze/spec";
+
+// Narrow string-literal unions for status, used in reducer/JSX switches.
+// These mirror the enum inlined in @genblaze/spec's Run.status / Step.status.
+export type RunStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+export type StepStatus =
+  | "pending"
+  | "submitted"
+  | "processing"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
 
 export type AspectRatio = "16:9" | "9:16" | "1:1";
 
-export type RunStatus = "pending" | "running" | "succeeded" | "failed";
-export type StepStatus = "pending" | "running" | "succeeded" | "failed";
-
-// Mirrors genblaze_core.models.Asset
-export interface Asset {
-  step_id: string;
-  media_type: string;
-  url: string;         // durable (non-presigned) — use /assets/{key} for playback
-  b2_key: string;
-  sha256: string;
-  cost_usd: number | null;
-}
-
-// Mirrors genblaze_core.models.Step
-export interface Step {
-  id: string;
-  index: number;
-  model: string;
-  status: StepStatus;
-  prompt: string | null;
-  assets: Asset[];
-  progress: number | null;
-  elapsed_sec: number | null;
-  cost_usd: number | null;
-}
-
-// Mirrors genblaze_core.models.Run
-export interface Run {
-  id: string;
-  name: string;
-  status: RunStatus;
-  prompt: string;
-  seed: number | null;
-  aspect_ratio: AspectRatio;
-  steps: Step[];
-  manifest_key: string | null;
-  canonical_hash: string | null;
-  parent_run_id: string | null;
-}
-
-// SSE stream event (mirrors genblaze_core.observability.events.StreamEvent.to_dict())
-export interface StreamEvent {
-  type: string;
-  run_id: string;
-  step_index?: number;
-  payload: Record<string, unknown>;
-}
-
-// Request bodies
+// Request bodies — mirror app/types/runs.py
 export interface RunRequest {
   prompt: string;
   seed?: number;
@@ -72,4 +41,15 @@ export interface ApproveRequest {
   approved_step_id: string;
   duration_sec?: number;
   video_models?: string[];
+}
+
+// File browser entry — mirrors FileEntry from services/api/app/types/files.py
+export interface FileEntry {
+  key: string;
+  filename: string;
+  folder: string;
+  size_bytes: number;
+  size_human: string;
+  content_type: string;
+  uploaded_at: string;
 }

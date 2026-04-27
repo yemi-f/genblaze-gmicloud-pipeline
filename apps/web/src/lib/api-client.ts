@@ -1,5 +1,6 @@
 import type {
   ApproveRequest,
+  FileEntry,
   IterateRequest,
   Run,
   RunRequest,
@@ -53,9 +54,51 @@ export async function getManifest(runId: string) {
   return apiFetch<Record<string, unknown>>(`/runs/${runId}/manifest`);
 }
 
-/** Returns a redirect-resolved asset URL for UI playback (presigned, short-lived). */
-export function getAssetUrl(b2Key: string): string {
-  return `${API_BASE}/assets/${b2Key}`;
+/** Returns a redirect-resolved asset URL for UI playback (presigned, short-lived).
+ *
+ * @genblaze/spec Asset has only `url` (the durable B2 S3 URL written by
+ * ObjectStorageSink) — no separate storage-key field. Strip `/<bucket>/` to
+ * recover the key for our /assets/{key} presign endpoint. Bare keys also work.
+ */
+export function getAssetUrl(keyOrUrl: string): string {
+  const key = keyOrUrl.startsWith("http")
+    ? new URL(keyOrUrl).pathname.replace(/^\/[^/]+\//, "")
+    : keyOrUrl;
+  return `${API_BASE}/assets/${key}`;
+}
+
+// --- File browser ---
+
+export async function listFiles(prefix = "", limit = 200) {
+  return apiFetch<FileEntry[]>(
+    `/files?prefix=${encodeURIComponent(prefix)}&limit=${limit}`,
+  );
+}
+
+/** Short-lived presigned URL for inline preview — does not trigger a download. */
+export async function getFilePreviewUrl(key: string) {
+  return apiFetch<{ url: string }>(`/files/${key}/preview`);
+}
+
+/** Proxy the raw bytes through the API. Capped server-side at 5 MB. */
+export async function getFileContent(key: string): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/files/${key}/content`);
+  } catch {
+    throw new ApiError("Network error — check your connection", 0);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(body.detail || `API error: ${res.status}`, res.status);
+  }
+  return res.text();
+}
+
+export async function deleteFile(key: string) {
+  return apiFetch<{ deleted: boolean; key: string }>(`/files/${key}`, {
+    method: "DELETE",
+  });
 }
 
 /**

@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-04-22 -->
+<!-- last_verified: 2026-04-23 -->
 # AGENTS.md — genblaze-gmicloud-pipeline
 
 This is the authoritative control surface for all coding agents. Read this first.
@@ -44,11 +44,11 @@ Never `B2_S3_*`, never `B2_APPLICATION_KEY_ID`, never `AWS_*`.
 
 | Model | Type |
 |---|---|
-| `Seedream-5.0-Lite` | Image |
-| `FLUX-Kontext-Pro` | Image (reference) |
+| `seedream-5.0-lite` | Image |
+| `flux-kontext-pro` | Image (reference) |
 | `Kling-Image2Video-V2.1-Master` | Video |
-| `Wan-2.6-I2V` | Video |
-| `PixVerse-v5.6` | Video |
+| `wan2.6-i2v` | Video |
+| `pixverse-v5.6-i2v` | Video |
 
 ## Sizing targets
 

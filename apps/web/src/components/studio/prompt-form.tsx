@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { GeneratingLoader } from "@/components/ui/generating-loader";
+import { StatusPill } from "@/components/ui/status-pill";
 import {
   Select,
   SelectContent,
@@ -11,12 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { IMAGE_MODELS, lookupModel } from "@/lib/models";
 import type { AspectRatio } from "@genblaze-gmicloud-pipeline/shared";
-
-const IMAGE_MODELS = [
-  { value: "Seedream-5.0-Lite", label: "Seedream 5.0 Lite" },
-  { value: "FLUX-Kontext-Pro", label: "FLUX Kontext Pro" },
-];
 
 interface PromptFormProps {
   onSubmit: (
@@ -33,7 +31,9 @@ export function PromptForm({ onSubmit, disabled, onReset }: PromptFormProps) {
   const [prompt, setPrompt] = useState("");
   const [seed, setSeed] = useState(42);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
-  const [imageModel, setImageModel] = useState("Seedream-5.0-Lite");
+  const [imageModel, setImageModel] = useState(IMAGE_MODELS[0].id);
+
+  const selectedModel = lookupModel(imageModel);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +43,19 @@ export function PromptForm({ onSubmit, disabled, onReset }: PromptFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-border p-5">
+      {/* Stage header — numbered, with the selected model surfaced as a
+          provider badge so the user sees which GMI Cloud model will run. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-muted-foreground">01</span>
+          <h2 className="card-title">Compose</h2>
+          <StatusPill tone={selectedModel.tone}>{selectedModel.label}</StatusPill>
+        </div>
+        <span className="text-xs text-muted-foreground hidden sm:inline">
+          {selectedModel.hint}
+        </span>
+      </div>
+
       <div className="space-y-1.5">
         <Label htmlFor="prompt">Prompt</Label>
         <Textarea
@@ -60,13 +73,16 @@ export function PromptForm({ onSubmit, disabled, onReset }: PromptFormProps) {
         <div className="space-y-1.5">
           <Label htmlFor="model">Image model</Label>
           <Select value={imageModel} onValueChange={setImageModel} disabled={disabled}>
-            <SelectTrigger id="model" className="w-[200px]">
+            <SelectTrigger id="model" className="w-[240px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {IMAGE_MODELS.map((m) => (
-                <SelectItem key={m.value} value={m.value}>
-                  {m.label}
+                <SelectItem key={m.id} value={m.id}>
+                  <span className="flex items-center gap-2">
+                    <span>{m.label}</span>
+                    <span className="text-[11px] text-muted-foreground">{m.provider}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -104,9 +120,30 @@ export function PromptForm({ onSubmit, disabled, onReset }: PromptFormProps) {
         </div>
       </div>
 
+      {/* SDK call hint — makes the demo's value prop concrete: the user can
+          read exactly which API path streams which Genblaze method against
+          which GMI Cloud model. */}
+      <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="text-foreground/80">On submit:</span>{" "}
+        <span className="font-mono">POST /runs/stream</span>
+        <span className="opacity-60"> → </span>
+        <span className="font-mono">genblaze.run(...)</span>
+        <span className="opacity-60"> → </span>
+        <span className="font-mono">GMI Cloud · {selectedModel.id}</span>
+        <span className="opacity-60"> → </span>
+        <span>SSE events stream back into the inspector →.</span>
+      </div>
+
       <div className="flex gap-2">
         <Button type="submit" disabled={disabled || !prompt.trim()}>
-          {disabled ? "Generating..." : "Generate"}
+          {disabled ? (
+            <span className="inline-flex items-center gap-2">
+              <GeneratingLoader size="sm" />
+              Generating...
+            </span>
+          ) : (
+            "Generate"
+          )}
         </Button>
         {onReset && (
           <Button type="button" variant="ghost" onClick={onReset} disabled={disabled}>

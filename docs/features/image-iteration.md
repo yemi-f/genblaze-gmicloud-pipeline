@@ -13,7 +13,7 @@ A new `Pipeline(...).from_result(prev).step(GMICloudImageProvider, ...)` is
 created without `input_from`. The model generates a fresh image from the updated
 (or original) prompt and a new seed.
 
-### Image-as-reference (FLUX-Kontext-Pro)
+### Image-as-reference (`flux-kontext-pro`)
 
 When `reference_asset_key` is set, the step adds `input_from=0` so the library
 passes the previous image as the visual reference. The model refines rather than
@@ -32,7 +32,7 @@ Pipeline("genblaze-gmicloud-pipeline", max_concurrency=1)
 .from_result(prev_result)
 .step(
     GMICloudImageProvider(api_key=...),
-    model="FLUX-Kontext-Pro",
+    model="flux-kontext-pro",
     modality=Modality.IMAGE,
     prompt=req.prompt,
     seed=req.seed,

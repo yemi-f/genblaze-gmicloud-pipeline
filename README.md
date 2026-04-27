@@ -1,124 +1,263 @@
-<!-- last_verified: 2026-04-22 -->
-# Genblaze x GMICloud Generative Pipeline
+<!-- last_verified: 2026-04-27 -->
+# Genblaze × GMICloud Generative Pipeline
 
-One prompt turns into an anchor image, iterated to your liking, then fanned out
-concurrently to three GMICloud video models — all persisted to Backblaze B2 with
-a SHA-256-verified manifest. Under 100 lines of Genblaze-specific glue code.
+A sample app showing how to compose **GMICloud** image and video models with
+**[Genblaze](https://github.com/backblaze-labs/genblaze)** and persist every
+artifact to **[Backblaze B2](https://www.backblaze.com/sign-up/ai-cloud-storage?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=gmicloud)**
+with a SHA-256–verified manifest. One prompt becomes an anchor image, you
+iterate to your liking, then fan out concurrently to three video models — all
+under ~100 lines of Genblaze-specific glue.
+
+![GMICloud × Genblaze Pipeline Studio](docs/images/GMICloud-Genblaze-pipeline.png)
 
 ```
-prompt → Seedream-5.0-Lite → (iterate / refine) → Approve
+prompt → seedream-5.0-lite → (iterate / refine) → Approve
     ↓                                                ↓
                          ┌─── Kling-Image2Video-V2.1-Master ─┐
-                         ├─── Wan-2.6-I2V ────────────────────┤  → manifest.json (B2)
-                         └─── PixVerse-v5.6 ─────────────────┘
+                         ├─── wan2.6-i2v ─────────────────────┤  → manifest.json (B2)
+                         └─── pixverse-v5.6-i2v ──────────────┘
 ```
+
+## What's inside
+
+- **End-to-end pipeline.** Image → iterate → fan-out video, streaming each step
+  over Server-Sent Events to the browser.
+- **Provable provenance.** Every run lands in B2 with a canonical-hash
+  `manifest.json`; flip one flag to make manifests Object-Lock immutable.
+- **Zero direct `boto3`.** All storage goes through `genblaze-s3`, with the
+  S3-compatible API and a project-tagged user agent.
+- **Layered architecture.** Genblaze imports are confined to a single ~100-line
+  `repo/pipelines.py`; structural tests fail the build if that boundary leaks.
+
+## Quickstart
+
+```bash
+git clone https://github.com/backblaze-labs/genblaze-gmicloud-pipeline.git
+cd genblaze-gmicloud-pipeline
+
+# 1. Backend — Python venv + deps
+cd services/api
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env       # fill in credentials (see Configuration)
+
+# 2. Frontend — workspace deps
+cd ../..
+pnpm install
+
+# 3. Run both (Next.js :3000, FastAPI :8000)
+pnpm dev
+```
+
+Open <http://localhost:3000> for the Studio. The API self-documents at
+<http://localhost:8000/docs>.
+
+> First time? See [Prerequisites](#prerequisites) for what to install and which
+> accounts to create.
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| Frontend | Next.js 16 + React 19 + shadcn/ui |
-| Backend | FastAPI + Genblaze Core |
-| Image models | GMICloud via `genblaze-gmicloud` |
-| Video models | GMICloud via `genblaze-gmicloud` |
-| Storage | Backblaze B2 via `genblaze-s3` |
+| Layer        | Tech                                                   |
+| ------------ | ------------------------------------------------------ |
+| Frontend     | Next.js 16 · React 19 · Tailwind · shadcn/ui           |
+| Backend      | FastAPI · Pydantic v2 · Genblaze Core                  |
+| Image models | GMICloud via `genblaze-gmicloud`                       |
+| Video models | GMICloud via `genblaze-gmicloud`                       |
+| Storage      | Backblaze B2 via `genblaze-s3` (S3-compatible)         |
+| Streaming    | Server-Sent Events (typed `StreamEvent` discriminator) |
 
-## Run it in 5 minutes
+## Prerequisites
 
-```bash
-git clone https://github.com/backblaze-b2-samples/genblaze-gmicloud-pipeline
-cd genblaze-gmicloud-pipeline
+- **Node.js ≥ 20** and **pnpm ≥ 9** — [installation guide](https://pnpm.io/installation)
+- **Python ≥ 3.11**
+- A **[Backblaze B2 account](https://www.backblaze.com/sign-up/ai-cloud-storage?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=-gmicloud)** (free tier is enough)
+  - A bucket — create one in your [B2 dashboard](https://secure.backblaze.com/b2_buckets.htm?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=gmicloud)
+  - An application key with `readFiles`, `writeFiles`, `deleteFiles` scoped to that bucket
+- A **[GMICloud](https://gmicloud.ai/)** account and API key — image/video model access
 
-# Backend
-cp services/api/.env.example services/api/.env
-# Fill in B2_KEY_ID, B2_APPLICATION_KEY, B2_BUCKET_NAME, B2_REGION, GMI_API_KEY
-cd services/api && python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+## Configuration
 
-# Frontend + start both
-cd ../..
-pnpm install
-pnpm dev
-# → http://localhost:3000  (UI)  http://localhost:8000/docs  (API)
-```
+Edit `services/api/.env`:
 
-## Environment variables
-
-```
-# Backblaze B2
+```env
+# Backblaze B2 — S3-compatible endpoint for the region your bucket lives in
 B2_ENDPOINT=https://s3.<region>.backblazeb2.com
-B2_REGION=<region>           # e.g. us-west-004
+B2_REGION=<region>                     # e.g. us-west-004, eu-central-003
 B2_KEY_ID=
 B2_APPLICATION_KEY=
 B2_BUCKET_NAME=
 
-# GMICloud (https://gmicloud.ai/)
+# GMICloud — https://gmicloud.ai/
 GMI_API_KEY=
-
-# Optional
-STEP_CACHE_DIR=./.cache/genblaze   # skip GMI calls for same prompt+seed
-OTEL_ENDPOINT=                      # OpenTelemetry collector endpoint
-WEBHOOK_URL=                        # POST completion events here
-WEBHOOK_HEADER_AUTHORIZATION=       # Bearer token for webhook
 ```
+
+Region is derived from the bucket — never hardcode it elsewhere. Variable names
+match the Backblaze B2 sample-apps standard (no `AWS_*` prefixes, no `B2_S3_*`
+aliases).
+
+A handful of optional knobs (local step cache, OpenTelemetry, completion
+webhook, CORS overrides) are documented inline in
+[`services/api/.env.example`](services/api/.env.example).
+
+## Usage walkthrough
+
+1. Enter a prompt, pick an aspect ratio, seed, and image model. Click **Generate**.
+2. **Iterate** with *Regenerate* (new seed) or *Refine on this one* (text + the
+   current image as a visual reference via `flux-kontext-pro`).
+3. **Approve** to fan out to three video models concurrently.
+4. **Verify** the manifest: every run writes a SHA-256-canonicalized
+   `manifest.json` to B2.
+5. **Browse** what landed in B2 from the *Files* tab.
+
+Detailed flows: [docs/app-workflows.md](docs/app-workflows.md) ·
+Per-feature deep-dives: [docs/features/](docs/features/)
 
 ## Model catalog
 
-| Model slug | Type | Notes |
-|---|---|---|
-| `Seedream-5.0-Lite` | Image | Default anchor model |
-| `FLUX-Kontext-Pro` | Image | Image-as-reference refine flow |
-| `Kling-Image2Video-V2.1-Master` | Video | Fan-out slot 1 |
-| `Wan-2.6-I2V` | Video | Fan-out slot 2 |
-| `PixVerse-v5.6` | Video | Fan-out slot 3 |
+| Model slug                       | Type            | Notes                              |
+| -------------------------------- | --------------- | ---------------------------------- |
+| `seedream-5.0-lite`              | Image           | Default anchor model               |
+| `flux-kontext-pro`               | Image (refine)  | Image-as-reference iteration flow  |
+| `Kling-Image2Video-V2.1-Master`  | Video           | Fan-out slot 1                     |
+| `wan2.6-i2v`                     | Video           | Fan-out slot 2                     |
+| `pixverse-v5.6-i2v`              | Video           | Fan-out slot 3                     |
 
-Slugs are hyphenated and case-sensitive exactly as GMICloud expects.
+Slugs are case-sensitive — exactly as GMICloud expects.
+
+## About Genblaze
+
+[**Genblaze**](https://github.com/backblaze-labs/genblaze) is the open-source
+SDK that does the heavy lifting in this sample. It provides:
+
+- **`genblaze-core`** — a fluent `Pipeline(...).step(...).stream()` API for
+  generative workflows, with typed `StreamEvent`s, a step cache, tracers
+  (logging + OpenTelemetry), and pluggable sinks.
+- **`genblaze-gmicloud`** — a provider package that maps Pipeline steps onto
+  GMICloud image and video model endpoints.
+- **`genblaze-s3`** — an S3-compatible storage backend with first-class support
+  for Backblaze B2 (`S3StorageBackend.for_backblaze(...)`), durable URLs,
+  multipart uploads, and Object Lock.
+- **Manifests** — every run produces a SHA-256-canonicalized `Manifest` that
+  records inputs, outputs, asset URLs, and lineage (`parent_run_id`),
+  uploaded to your bucket as the durable record of the run.
+
+This sample keeps Genblaze imports confined to one file — see
+[`services/api/app/repo/pipelines.py`](services/api/app/repo/pipelines.py) for
+the full integration in under 100 lines. To dive deeper, head to the
+[Genblaze repo](https://github.com/backblaze-labs/genblaze).
+
+## About GMICloud
+
+[**GMICloud**](https://gmicloud.ai/) is the inference platform serving the
+image and video models behind every step in this pipeline. In this sample:
+
+- **Image models** — `seedream-5.0-lite` (text-to-image anchor) and
+  `flux-kontext-pro` (image-as-reference refinement) drive the generate /
+  iterate flow.
+- **Video models** — `Kling-Image2Video-V2.1-Master`, `wan2.6-i2v`, and
+  `pixverse-v5.6-i2v` run concurrently on the approved anchor image during the
+  fan-out stage.
+- **Authentication** — a single `GMI_API_KEY` covers all model calls; create
+  one at <https://gmicloud.ai/>.
+- **Integration** — every GMI request is issued by the `genblaze-gmicloud`
+  provider; this sample does not call GMICloud HTTP endpoints directly. To add
+  a new model, append its slug to `DEFAULT_VIDEO_MODELS` in
+  `app/types/runs.py` (or pass `image_model="..."` on the request) — the
+  provider forwards the slug to GMICloud as-is.
+
+## Project layout
+
+```
+genblaze-gmicloud-pipeline/
+├── apps/web/               Next.js 16 + React 19 Studio UI
+├── services/api/           FastAPI backend
+│   └── app/
+│       ├── repo/           ← only place genblaze_* imports live
+│       ├── runtime/        FastAPI route handlers (SSE bridges)
+│       ├── types/          Pydantic models (no DTO mirroring)
+│       └── config/         Settings (pydantic-settings)
+├── packages/shared/        Cross-target TypeScript types
+├── docs/                   Architecture, features, workflows
+└── infra/                  Optional infra notes
+```
+
+Key invariant: Genblaze imports appear **only** in
+`services/api/app/repo/pipelines.py`, and `boto3` / `botocore` is never
+imported directly anywhere in the sample source. Both are enforced by
+`pnpm check:structure`.
 
 ## Architecture in one paragraph
 
-All Genblaze imports live in `services/api/app/repo/pipelines.py` (≤ 100 lines).
-Three builder functions (`build_image_pipeline`, `build_iteration_pipeline`,
+Three pipeline builders (`build_image_pipeline`, `build_iteration_pipeline`,
 `build_video_fanout`) return configured `Pipeline` objects. The runtime layer
-streams each pipeline via `pipeline.stream(sink=ObjectStorageSink(...))`, yielding
-`StreamEvent` JSON lines as SSE. On completion the `PipelineResult` is cached
-in-memory so the iterate/approve endpoints can fork from it. Assets and a
-SHA-256-verified manifest land in B2 at `runs/{run_id}/…`.
+streams each via `pipeline.stream(sink=ObjectStorageSink(...))`, yielding typed
+`StreamEvent` records that FastAPI bridges to SSE. On completion the
+`PipelineResult` is cached in-memory so iterate/approve endpoints can fork from
+it. Assets and the SHA-256 manifest land in B2 via the sink — no application
+code touches `boto3`.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full topology.
+Full topology: [ARCHITECTURE.md](ARCHITECTURE.md)
 
-## Storage model
-
-This sample has **no direct `boto3` import**. All storage is delegated to
-`genblaze-s3.S3StorageBackend.for_backblaze(...)`, which:
-
-- Sets `user_agent_extra="b2ai-genblaze/<version>"` on the internal boto3 client
-  (B2-side traffic attribution is preserved).
-- Per-sample identity rides in `Pipeline(name="genblaze-gmicloud-pipeline")`,
-  written into every `Manifest` in B2 — a stronger provenance signal than a UA.
-
-Credentials are passed explicitly via `key_id=settings.b2_key_id` and
-`app_key=settings.b2_application_key` so the library's `B2_APP_KEY` env-var
-fallback never fires and `.env.example` uses only the project-standard names.
-
-## Checks
+## Development
 
 ```bash
+pnpm dev              # Run web + api with hot reload
+pnpm test:api         # Backend pytest suite (fast)
+pnpm lint             # Next.js ESLint
+pnpm lint:api         # ruff check
+pnpm check:structure  # Layer + boto3 invariants
+pnpm test:e2e         # Playwright (requires dev server running)
+
+# Full pre-PR sweep:
 pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure
 ```
 
-The structural tests enforce that `genblaze_*` imports appear only in
-`app/repo/pipelines.py` and that `boto3`/`botocore` are never imported
-directly anywhere in the sample source.
+More: [docs/dev-workflows.md](docs/dev-workflows.md)
 
-## Object Lock (doc-only)
+## Object Lock (manifests as tamper-proof records)
 
-To make manifests tamper-proof, enable Object Lock on your bucket and add one
-line to `_sink()` in `repo/pipelines.py`:
+To make manifests immutable, enable Object Lock on your bucket and add one line
+to `_sink()` in `services/api/app/repo/pipelines.py`:
 
 ```python
-ObjectStorageSink(backend, prefix="runs",
-                  manifest_lock=ObjectLockConfig(mode="COMPLIANCE", days=365))
+ObjectStorageSink(
+    backend, prefix="runs",
+    manifest_lock=ObjectLockConfig(mode="COMPLIANCE", days=365),
+)
 ```
+
+Once written, manifests under `runs/` cannot be deleted or overwritten — even
+by the account root — until retention expires. See
+[docs/features/manifest.md](docs/features/manifest.md).
+
+## Troubleshooting
+
+- **`/health` reports `b2_connected: false`** — re-check `B2_ENDPOINT`,
+  `B2_REGION`, and that the application key is scoped to `B2_BUCKET_NAME` with
+  `readFiles` + `writeFiles` permissions.
+- **GMICloud 401 / 403** — `GMI_API_KEY` missing or expired; regenerate it in
+  your [GMICloud](https://gmicloud.ai/) console.
+- **Same prompt always returns the same image** — that's the local step cache
+  (set via `STEP_CACHE_DIR` in `.env.example`). Delete the directory to force a
+  fresh GMI call.
+- **CORS errors from the web app** — set `API_CORS_ORIGINS` in
+  `services/api/.env` if your dev server runs on a different origin (see
+  `.env.example`).
+- **`pnpm check:structure` fails after edits** — you've imported `genblaze_*`
+  outside `repo/pipelines.py` or `boto3` somewhere in the sample source. See
+  [AGENTS.md](AGENTS.md) for the layer rules.
+
+## Documentation
+
+| Doc | Purpose |
+| --- | --- |
+| [AGENTS.md](AGENTS.md) | Layer discipline, env standard, model slugs (authoritative) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Pipeline topology + storage flows |
+| [docs/app-workflows.md](docs/app-workflows.md) | End-user journeys |
+| [docs/dev-workflows.md](docs/dev-workflows.md) | Engineering workflows |
+| [docs/features/](docs/features/) | Per-feature deep-dives (image, iteration, video fan-out, manifest, files) |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security posture |
+| [docs/RELIABILITY.md](docs/RELIABILITY.md) | Reliability + retry semantics |
 
 ## License
 

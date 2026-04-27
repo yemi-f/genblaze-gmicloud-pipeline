@@ -11,8 +11,8 @@ from pydantic import BaseModel
 # Default video models for the fan-out step
 DEFAULT_VIDEO_MODELS = [
     "Kling-Image2Video-V2.1-Master",
-    "Wan-2.6-I2V",
-    "PixVerse-v5.6",
+    "wan2.6-i2v",
+    "pixverse-v5.6-i2v",
 ]
 
 
@@ -22,7 +22,7 @@ class RunRequest(BaseModel):
     prompt: str
     seed: int | None = 42
     aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"
-    image_model: str = "Seedream-5.0-Lite"
+    image_model: str = "seedream-5.0-lite"
 
 
 class IterateRequest(BaseModel):
@@ -31,9 +31,9 @@ class IterateRequest(BaseModel):
     parent_run_id: str
     prompt: str | None = None
     seed: int | None = None
-    # B2 key of the image asset to use as visual reference (FLUX-Kontext-Pro flow)
+    # B2 key of the image asset to use as visual reference (flux-kontext-pro flow)
     reference_asset_key: str | None = None
-    image_model: str = "Seedream-5.0-Lite"
+    image_model: str = "seedream-5.0-lite"
 
 
 class ApproveRequest(BaseModel):

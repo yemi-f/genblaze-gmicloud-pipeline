@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Clapperboard, Settings, Sparkles } from "lucide-react";
+import { Clapperboard, FolderOpen, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,10 +18,9 @@ import {
 
 const navItems = [
   { title: "Studio", href: "/", icon: Clapperboard },
+  { title: "Files", href: "/files", icon: FolderOpen },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
-
-const utilItems = [{ title: "Design System", href: "/design", icon: Sparkles }];
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -48,36 +47,6 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      className={
-                        isActive
-                          ? "relative font-semibold before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary"
-                          : ""
-                      }
-                    >
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Reference
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {utilItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <SidebarMenuItem key={item.href}>

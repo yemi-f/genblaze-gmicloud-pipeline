@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GeneratingLoader } from "@/components/ui/generating-loader";
 import { getManifest } from "@/lib/api-client";
 
 interface ManifestPanelProps {
@@ -54,7 +55,14 @@ export function ManifestPanel({ runId, manifestKey, canonicalHash }: ManifestPan
           onClick={handleVerify}
           disabled={verifying}
         >
-          {verifying ? "Verifying..." : "Verify hash"}
+          {verifying ? (
+            <span className="inline-flex items-center gap-1.5">
+              <GeneratingLoader size="sm" />
+              Verifying...
+            </span>
+          ) : (
+            "Verify hash"
+          )}
         </Button>
         <Button size="sm" variant="ghost" asChild>
           <a href={`/api/runs/${runId}/manifest`} target="_blank" rel="noopener noreferrer">

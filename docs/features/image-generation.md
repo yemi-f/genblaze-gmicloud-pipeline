@@ -10,8 +10,8 @@ written.
 
 | Slug | Notes |
 |---|---|
-| `Seedream-5.0-Lite` | Default. Fast, high quality. |
-| `FLUX-Kontext-Pro` | Image-as-reference model for the iterate stage. |
+| `seedream-5.0-lite` | Default. Fast, high quality. |
+| `flux-kontext-pro` | Image-as-reference model for the iterate stage. |
 
 ## Parameters
 
@@ -25,7 +25,7 @@ written.
 Pipeline("genblaze-gmicloud-pipeline", max_concurrency=1)
 .step(
     GMICloudImageProvider(api_key=...),
-    model="Seedream-5.0-Lite",
+    model="seedream-5.0-lite",
     modality=Modality.IMAGE,
     prompt=req.prompt,
     seed=req.seed,

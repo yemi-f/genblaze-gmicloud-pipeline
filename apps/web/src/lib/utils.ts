@@ -26,3 +26,16 @@ export function formatDate(dateStr: string) {
     minute: "2-digit",
   });
 }
+
+/** Diff two ISO timestamps and render as "780 ms" / "12.4s" / "1m 03s". */
+export function humanizeDuration(startIso?: string | null, endIso?: string | null) {
+  if (!startIso || !endIso) return null;
+  const ms = Date.parse(endIso) - Date.parse(startIso);
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(1)}s`;
+  const m = Math.floor(s / 60);
+  const rs = Math.round(s - m * 60);
+  return `${m}m ${rs.toString().padStart(2, "0")}s`;
+}

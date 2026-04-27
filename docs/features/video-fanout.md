@@ -11,8 +11,8 @@ and runs on a different GMICloud video model.
 | Slug | Notes |
 |---|---|
 | `Kling-Image2Video-V2.1-Master` | Cinematic quality, slower |
-| `Wan-2.6-I2V` | General-purpose motion |
-| `PixVerse-v5.6` | Creative style |
+| `wan2.6-i2v` | General-purpose motion |
+| `pixverse-v5.6-i2v` | Creative style |
 
 ## Concurrency
 
@@ -24,7 +24,7 @@ independent progress bars.
 
 ```python
 p = Pipeline("genblaze-gmicloud-pipeline", max_concurrency=3).from_result(approved)
-for model in ["Kling-Image2Video-V2.1-Master", "Wan-2.6-I2V", "PixVerse-v5.6"]:
+for model in ["Kling-Image2Video-V2.1-Master", "wan2.6-i2v", "pixverse-v5.6-i2v"]:
     p = p.step(
         GMICloudVideoProvider(api_key=...),
         model=model,

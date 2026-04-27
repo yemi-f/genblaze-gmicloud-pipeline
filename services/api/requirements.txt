@@ -4,10 +4,15 @@ python-dotenv>=1.0.0
 pydantic>=2.10.0
 pydantic-settings>=2.7.0
 
-# Genblaze pipeline + GMICloud provider + B2 storage (boto3 is transitive)
-genblaze-core>=0.1.1,<0.2
-genblaze-gmicloud>=0.1.0,<0.2
-genblaze-s3>=0.2.0,<0.3
+# Genblaze pipeline + GMICloud provider + B2 storage (boto3 is transitive).
+# 0.2.5 bundle: ParamSurface per-model surfaces (PixVerse `quality`, Wan
+# `image_url`/`tail_image_url` etc. allowlisted), `models=` ctor kwarg now
+# forwards on GMICloudBase, retry-policy module added (RetryPolicy class
+# not yet exported as of 0.2.5). S3 0.2.3 adds multipart uploads + per-part
+# SHA-256 + region auto-detect + Object Lock retention. No upper caps.
+genblaze-core>=0.2.5
+genblaze-gmicloud>=0.2.5
+genblaze-s3>=0.2.3
 
 # Dev / quality
 ruff>=0.8.0

@@ -42,7 +42,7 @@ pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure  # full CI s
 
 ## Changing the image model
 
-Pass `image_model="FLUX-Kontext-Pro"` in the `RunRequest`. No backend changes
+Pass `image_model="flux-kontext-pro"` in the `RunRequest`. No backend changes
 needed — the model slug is a passthrough to GMICloudImageProvider.
 
 ## Enabling Object Lock

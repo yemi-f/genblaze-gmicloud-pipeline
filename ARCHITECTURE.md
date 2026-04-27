@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-04-22 -->
+<!-- last_verified: 2026-04-23 -->
 # Architecture — genblaze-gmicloud-pipeline
 
 ## Pipeline topology
@@ -7,7 +7,7 @@
 POST /runs/stream
   └─ build_image_pipeline(RunRequest)
        └─ Pipeline("genblaze-gmicloud-pipeline", max_concurrency=1)
-            .step(GMICloudImageProvider, model="Seedream-5.0-Lite", ...)
+            .step(GMICloudImageProvider, model="seedream-5.0-lite", ...)
             .stream(sink=ObjectStorageSink)
 
 POST /runs/{id}/iterate/stream
@@ -20,8 +20,8 @@ POST /runs/{id}/approve/stream
   └─ build_video_fanout(ApproveRequest, approved_result)
        └─ Pipeline(..., max_concurrency=3).from_result(approved)
             .step(GMICloudVideoProvider, model="Kling-Image2Video-V2.1-Master", input_from=0)
-            .step(GMICloudVideoProvider, model="Wan-2.6-I2V",                   input_from=0)
-            .step(GMICloudVideoProvider, model="PixVerse-v5.6",                  input_from=0)
+            .step(GMICloudVideoProvider, model="wan2.6-i2v",                    input_from=0)
+            .step(GMICloudVideoProvider, model="pixverse-v5.6-i2v",             input_from=0)
             .stream(sink=ObjectStorageSink)
 ```
 
@@ -50,6 +50,9 @@ All storage goes through the single `@lru_cache(maxsize=1)` backend in
 | Upload | `pipeline.stream(sink=ObjectStorageSink)` — library-managed |
 | Thumbnail / playback | `GET /assets/{key}` → 302 to `backend.get_url(key, expires_in=600)` |
 | Manifest JSON | `GET /runs/{id}/manifest` → `backend.get(key)` |
+| Bucket listing | `GET /files` → `list_assets()` (inspected in the `/files` UI) |
+| Inline content | `GET /files/{key}/content` → `backend.get(key)` (5 MB cap; powers the JSON viewer) |
+| Object delete | `DELETE /files/{key}` → `backend.delete(key)` |
 | Durable asset URLs | `backend.get_durable_url()` — library embeds in Manifest |
 | Health probe | `backend.exists("__genblaze_health_probe__")` |
 

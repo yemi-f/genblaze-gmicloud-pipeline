@@ -489,3 +489,110 @@ a[data-slot="button"].border.bg-background:hover {
   border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
   background: color-mix(in oklab, var(--primary) 5%, var(--card));
 }
+
+/* --- Status / provider pills ---
+   Compact rounded pills used for stage status and per-model provider tags.
+   Tone-driven via `data-tone` so the same component renders distinct
+   colors per provider without bespoke classes. */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.status-pill .pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.status-pill[data-tone="blue"]   { color: #0969da; background: #ddf4ff; border-color: color-mix(in oklab, #0969da 25%, transparent); }
+.status-pill[data-tone="cyan"]   { color: #1f6feb; background: #dbf4ff; border-color: color-mix(in oklab, #1f6feb 25%, transparent); }
+.status-pill[data-tone="violet"] { color: #6639ba; background: #fbefff; border-color: color-mix(in oklab, #8250df 25%, transparent); }
+.status-pill[data-tone="amber"]  { color: #9a6700; background: #fff8c5; border-color: color-mix(in oklab, #9a6700 25%, transparent); }
+.status-pill[data-tone="green"]  { color: #1a7f37; background: #dafbe1; border-color: color-mix(in oklab, #1a7f37 25%, transparent); }
+.status-pill[data-tone="red"]    { color: #cf222e; background: #ffebe9; border-color: color-mix(in oklab, #cf222e 25%, transparent); }
+.status-pill[data-tone="active"] {
+  color: #D30035;
+  background: color-mix(in oklab, #D30035 8%, var(--card));
+  border-color: color-mix(in oklab, #D30035 35%, transparent);
+}
+
+.dark .status-pill[data-tone="blue"]   { color: #79c0ff; background: rgba(56, 139, 253, 0.15); border-color: color-mix(in oklab, #79c0ff 25%, transparent); }
+.dark .status-pill[data-tone="cyan"]   { color: #79c0ff; background: rgba(56, 139, 253, 0.15); border-color: color-mix(in oklab, #79c0ff 25%, transparent); }
+.dark .status-pill[data-tone="violet"] { color: #d2a8ff; background: rgba(163, 113, 247, 0.15); border-color: color-mix(in oklab, #d2a8ff 25%, transparent); }
+.dark .status-pill[data-tone="amber"]  { color: #e3b341; background: rgba(187, 128, 9, 0.15); border-color: color-mix(in oklab, #e3b341 25%, transparent); }
+.dark .status-pill[data-tone="green"]  { color: #7ee787; background: rgba(46, 160, 67, 0.15); border-color: color-mix(in oklab, #7ee787 25%, transparent); }
+.dark .status-pill[data-tone="red"]    { color: #ffa198; background: rgba(248, 81, 73, 0.15); border-color: color-mix(in oklab, #ffa198 25%, transparent); }
+.dark .status-pill[data-tone="active"] {
+  color: #ff6b8a;
+  background: color-mix(in oklab, #D30035 18%, transparent);
+  border-color: color-mix(in oklab, #ff6b8a 35%, transparent);
+}
+
+/* Active pill — pulsing dot to convey "live". */
+.status-pill[data-tone="active"] .pill-dot {
+  animation: pill-pulse 1.4s ease-in-out infinite;
+}
+@keyframes pill-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* Stage placeholder — dotted box used for image / video tile slots
+   before any generation has happened. Quietly signals "this is where
+   X will appear". */
+.stage-placeholder {
+  border: 1.5px dashed color-mix(in oklab, var(--foreground) 18%, var(--border));
+  background: color-mix(in oklab, var(--muted) 60%, transparent);
+  color: var(--muted-foreground);
+}
+
+/* Step row in the pipeline inspector. Left rail line + index chip. */
+.inspector-step {
+  position: relative;
+  padding-left: 1.5rem;
+}
+.inspector-step::before {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 1.5px;
+  background: var(--border);
+}
+.inspector-step[data-status="processing"]::before { background: #D30035; }
+.inspector-step[data-status="succeeded"]::before  { background: var(--success); }
+.inspector-step[data-status="failed"]::before     { background: var(--destructive); }
+.inspector-step .step-chip {
+  position: absolute;
+  left: 0;
+  top: 0.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.inspector-step[data-status="processing"] .step-chip { border-color: #D30035; color: #D30035; }
+.inspector-step[data-status="succeeded"]  .step-chip { border-color: var(--success); color: var(--success); }
+.inspector-step[data-status="failed"]     .step-chip { border-color: var(--destructive); color: var(--destructive); }
+
+/* The blaze loader styles (.blaze-*) live next to the component at
+   components/ui/generating-loader/styles.css and are imported by
+   that component, so they only ship when the loader is used. */

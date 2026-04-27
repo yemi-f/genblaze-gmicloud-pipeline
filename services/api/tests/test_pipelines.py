@@ -18,8 +18,12 @@ from app.types.runs import ApproveRequest, IterateRequest, RunRequest
 
 
 def _make_prev_result(prompt: str = "a sunset", seed: int = 42, aspect_ratio: str = "16:9") -> PipelineResult:
-    """Minimal PipelineResult for .from_result() lineage tests."""
-    step = Step(provider="mock", model="mock", prompt=prompt, seed=seed)
+    """Minimal PipelineResult for .from_result() lineage tests. Includes a
+    single Asset on step 0 so downstream builders (video fan-out, refine) can
+    extract a reference URL."""
+    from genblaze_core.models.asset import Asset
+    asset = Asset(url="https://s3.example/bucket/runs/prev/image.jpg", media_type="image/jpeg")
+    step = Step(provider="mock", model="mock", prompt=prompt, seed=seed, assets=[asset])
     run = Run(steps=[step], metadata={"aspect_ratio": aspect_ratio})
     return PipelineResult(run=run, manifest=Manifest.from_run(run))
 
@@ -56,21 +60,25 @@ def test_build_video_fanout_has_three_steps_and_correct_concurrency(monkeypatch)
     monkeypatch.setenv("B2_BUCKET_NAME", "test-bucket")
     _reload_settings(monkeypatch)
 
-    from app.repo.pipelines import build_video_fanout
-    # MockVideoProvider replaces GMICloudVideoProvider
+    from app.repo import pipelines as pipes
     monkeypatch.setattr("app.repo.pipelines.GMICloudVideoProvider", lambda **_: MockVideoProvider())
+    # Stub presign + registry builder so the test doesn't hit B2 or the real
+    # class's models_default() (the lambda above has no such classmethod).
+    monkeypatch.setattr(pipes, "presign_asset_url", lambda u, **_: f"presigned://{u}")
+    monkeypatch.setattr(pipes, "_video_registry", lambda: None)
 
     req = ApproveRequest(run_id="run-1", approved_step_id="step-0")
-    pipeline = build_video_fanout(req, _make_prev_result())
+    pipeline = pipes.build_video_fanout(req, _make_prev_result())
     assert len(pipeline._steps) == 3
     assert pipeline._max_concurrency == 3
     models = [s.model for s in pipeline._steps]
     assert "Kling-Image2Video-V2.1-Master" in models
-    assert "Wan-2.6-I2V" in models
-    assert "PixVerse-v5.6" in models
-    # All three steps fan out from step 0 (the approved image)
+    assert "wan2.6-i2v" in models
+    assert "pixverse-v5.6-i2v" in models
+    # Each step receives the presigned approved-image URL via `image=` param.
     for step in pipeline._steps:
-        assert step.input_from == [0]
+        assert step.params["image"] == "presigned://https://s3.example/bucket/runs/prev/image.jpg"
+        assert step.params["duration"] == 5
 
 
 def test_build_iteration_pipeline_text_only(monkeypatch):
@@ -97,19 +105,21 @@ def test_build_iteration_pipeline_image_reference(monkeypatch):
     monkeypatch.setenv("B2_BUCKET_NAME", "test-bucket")
     _reload_settings(monkeypatch)
 
-    from app.repo.pipelines import build_iteration_pipeline
+    from app.repo import pipelines as pipes
     monkeypatch.setattr("app.repo.pipelines.GMICloudImageProvider", lambda **_: MockProvider())
+    monkeypatch.setattr(pipes, "presign_asset_url", lambda u, **_: f"presigned://{u}")
 
     req = IterateRequest(
         parent_run_id="run-1",
         reference_asset_key="runs/run-1/step-0/image.jpg",
-        image_model="FLUX-Kontext-Pro",
+        image_model="flux-kontext-pro",
     )
-    pipeline = build_iteration_pipeline(req, _make_prev_result())
+    pipeline = pipes.build_iteration_pipeline(req, _make_prev_result())
     assert len(pipeline._steps) == 1
     step = pipeline._steps[0]
-    # input_from is normalized to a list by Pipeline.step()
-    assert step.input_from == [0]
+    # Reference image is passed as a presigned `image=` param (not input_from;
+    # from_result() no longer hydrates prior steps as of genblaze 0.2.1).
+    assert step.params["image"] == "presigned://runs/run-1/step-0/image.jpg"
 
 
 def test_build_iteration_pipeline_falls_back_to_prior_prompt(monkeypatch):

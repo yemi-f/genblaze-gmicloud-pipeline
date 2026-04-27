@@ -11,7 +11,7 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from app.config import settings  # noqa: E402
-from app.runtime import health, runs  # noqa: E402
+from app.runtime import files, health, runs  # noqa: E402
 
 # --- Structured JSON logging ---
 
@@ -60,3 +60,4 @@ app.add_middleware(
 
 app.include_router(health.router, tags=["health"])
 app.include_router(runs.router, tags=["runs"])
+app.include_router(files.router, tags=["files"])

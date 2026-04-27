@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-04-22 -->
+<!-- last_verified: 2026-04-23 -->
 # App Workflows
 
 User journeys inside the Genblaze x GMICloud Pipeline Studio.
@@ -17,7 +17,7 @@ From the Image Canvas:
 - **Regenerate**: click the button. A new run forks from the current one with a
   new seed (or the same seed if unchanged). The new image replaces the canvas.
 - **Refine on this one**: click, optionally add a refinement prompt, then click
-  **Refine**. FLUX-Kontext-Pro uses the current image as a visual reference and
+  **Refine**. `flux-kontext-pro` uses the current image as a visual reference and
   applies the prompt edits.
 
 Iteration history is implicit — each run stores `parent_run_id` in its manifest.
@@ -41,3 +41,13 @@ run. `/runs/{runId}` is a stub deep-link page; the manifest at
 Set `WEBHOOK_URL`. Start a fan-out run and close the browser tab.
 The backend posts the completion event to your webhook endpoint when all three
 videos are done. Retrieve the manifest from B2 to inspect assets.
+
+## Journey 6: Browse what landed in B2
+
+1. Open **Files** in the sidebar (`/files`).
+2. The tree auto-expands top-level folders (`runs/` after the first generation).
+3. Drill into a run to see its manifest and generated assets.
+4. **Preview** opens images/videos inline; **Download** opens a short-lived
+   presigned URL in a new tab; **Delete** prompts for confirmation.
+
+See [docs/features/file-browser.md](features/file-browser.md).
