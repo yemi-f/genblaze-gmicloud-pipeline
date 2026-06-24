@@ -23,6 +23,8 @@ class RunRequest(BaseModel):
     seed: int | None = 42
     aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"
     image_model: str = "seedream-5.0-lite"
+    # B2 key of an uploaded style-reference image (returned by POST /uploads/reference)
+    reference_image_key: str | None = None
 
 
 class IterateRequest(BaseModel):

@@ -8,6 +8,7 @@ from app.repo.pipelines import (
     presign_asset_url,
     probe_storage,
     stream_run,
+    upload_reference_image,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "presign_asset_url",
     "probe_storage",
     "stream_run",
+    "upload_reference_image",
 ]

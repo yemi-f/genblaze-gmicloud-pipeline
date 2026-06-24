@@ -26,6 +26,7 @@ export interface RunRequest {
   seed?: number;
   aspect_ratio?: AspectRatio;
   image_model?: string;
+  reference_image_key?: string;
 }
 
 export interface IterateRequest {

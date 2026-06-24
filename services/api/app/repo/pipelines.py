@@ -5,6 +5,8 @@ delegated to genblaze-s3; no boto3 import exists anywhere in this sample.
 """
 
 import mimetypes
+import os
+import uuid
 from datetime import datetime
 from functools import lru_cache
 from urllib.parse import urlparse
@@ -64,7 +66,8 @@ def _tracer() -> CompositeTracer:
     """JSON logging always on; OTel added when OTEL_ENDPOINT is set."""
     tracers = [LoggingTracer()]
     if settings.otel_endpoint:
-        tracers.append(OTelTracer(endpoint=settings.otel_endpoint))
+        os.environ.setdefault("OTEL_EXPORTER_OTLP_ENDPOINT", settings.otel_endpoint)
+        tracers.append(OTelTracer())
     return CompositeTracer(tracers)
 
 
@@ -84,14 +87,19 @@ def _webhook() -> WebhookSink | None:
 
 def build_image_pipeline(req: RunRequest) -> Pipeline:
     """Single-step image generation (seedream-5.0-lite or caller-chosen model)."""
+    step_kwargs: dict = {
+        "model": req.image_model,
+        "modality": Modality.IMAGE,
+        "prompt": req.prompt,
+        "seed": req.seed,
+        "aspect_ratio": req.aspect_ratio,
+    }
+    if req.reference_image_key:
+        step_kwargs["image"] = presign_asset_url(req.reference_image_key)
     return (
         Pipeline("genblaze-gmicloud-pipeline", max_concurrency=1)
         .cache(_cache()).tracer(_tracer())
-        .step(
-            GMICloudImageProvider(api_key=settings.gmi_api_key),
-            model=req.image_model, modality=Modality.IMAGE,
-            prompt=req.prompt, seed=req.seed, aspect_ratio=req.aspect_ratio,
-        )
+        .step(GMICloudImageProvider(api_key=settings.gmi_api_key), **step_kwargs)
     )
 
 
@@ -223,6 +231,13 @@ def list_assets(prefix: str = "", max_keys: int = 1000) -> list[FileEntry]:
         ))
     entries.sort(key=lambda f: f.uploaded_at, reverse=True)
     return entries
+
+
+def upload_reference_image(data: bytes, content_type: str, extension: str) -> str:
+    """Store a user-uploaded style-reference image in B2. Returns the object key."""
+    key = f"uploads/{uuid.uuid4()}{extension}"
+    _backend().put(key, data, content_type=content_type)
+    return key
 
 
 def delete_asset(key: str) -> None:

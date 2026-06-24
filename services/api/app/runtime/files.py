@@ -7,10 +7,10 @@ import logging
 import mimetypes
 import re
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 
-from app.repo import delete_asset, fetch_manifest_bytes, list_assets, presign_asset_url
+from app.repo import delete_asset, fetch_manifest_bytes, list_assets, presign_asset_url, upload_reference_image
 from app.types import FileEntry
 
 logger = logging.getLogger("api.files")
@@ -19,14 +19,39 @@ router = APIRouter()
 # Reject empty keys and path-traversal attempts before they hit the backend.
 _DANGEROUS_KEY_RE = re.compile(r"(\.\./|/\.\.|\\|%2e%2e|%00|\x00)")
 
-# Hard cap for /files/{key}/content — this route exists for JSON/text inspection
-# in the viewer. Large media (videos, images) should go through presigned URLs.
-_MAX_CONTENT_BYTES = 5 * 1024 * 1024
+_MAX_CONTENT_BYTES = 5 * 1024 * 1024  # cap for /files/{key}/content (JSON/text viewer)
+_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # cap for reference-image uploads
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
 def _validate_key(key: str) -> None:
     if not key or _DANGEROUS_KEY_RE.search(key.lower()):
         raise HTTPException(status_code=400, detail="Invalid file key")
+
+
+@router.post("/uploads/reference")
+async def upload_reference(file: UploadFile = File(...)):
+    """Accept a user image, store it in B2 under uploads/, return its key.
+
+    The key is passed as reference_image_key in POST /runs/stream so the
+    pipeline can presign it and forward it to the image model as image=<url>.
+    """
+    if file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Unsupported type: {file.content_type!r}. Allowed: jpeg, png, webp, gif")
+    data = await file.read()
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"File too large ({len(data)} bytes). Limit is 10 MB")
+    ext = mimetypes.guess_extension(file.content_type) or ".bin"
+    # mimetypes maps image/jpeg → .jpeg on some platforms; normalise to .jpg
+    if ext == ".jpeg":
+        ext = ".jpg"
+    try:
+        key = upload_reference_image(data, file.content_type, ext)
+    except Exception as exc:
+        logger.exception("upload_reference_image failed")
+        raise HTTPException(status_code=502, detail=f"Storage upload failed: {exc}") from exc
+    logger.info("Reference image uploaded: key=%s size=%d", key, len(data))
+    return {"key": key}
 
 
 @router.get("/files", response_model=list[FileEntry])

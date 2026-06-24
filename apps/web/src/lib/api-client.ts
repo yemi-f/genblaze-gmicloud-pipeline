@@ -46,6 +46,23 @@ export async function getHealth() {
   return apiFetch<{ status: string; b2_connected: boolean; gmi_key_present: boolean }>("/health");
 }
 
+/** Upload a local image file to B2 as a style reference. Returns the B2 key. */
+export async function uploadReferenceImage(file: File): Promise<{ key: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/uploads/reference`, { method: "POST", body: form });
+  } catch {
+    throw new ApiError("Network error — check your connection", 0);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(body.detail || `Upload failed: ${res.status}`, res.status);
+  }
+  return res.json();
+}
+
 export async function getRun(runId: string) {
   return apiFetch<Run>(`/runs/${runId}`);
 }

@@ -139,7 +139,7 @@ export function StudioPage() {
 
   // --- Stage 1: Generate anchor image ---
   const handleGenerate = useCallback(
-    (prompt: string, seed: number, aspectRatio: "16:9" | "9:16" | "1:1", imageModel: string) => {
+    (prompt: string, seed: number, aspectRatio: "16:9" | "9:16" | "1:1", imageModel: string, referenceImageKey?: string) => {
       // Flip the stage immediately so the loader renders during the POST
       // round-trip (before any SSE event arrives). Real runId is attached
       // when pipeline.started fires.
@@ -152,7 +152,7 @@ export function StudioPage() {
       let terminalDispatched = false;
 
       startRun(
-        { prompt, seed, aspect_ratio: aspectRatio, image_model: imageModel },
+        { prompt, seed, aspect_ratio: aspectRatio, image_model: imageModel, reference_image_key: referenceImageKey },
         (ev) => {
           dispatch({ type: "ADD_EVENT", event: ev });
           if (ev.type === "pipeline.started" && ev.run_id) {
