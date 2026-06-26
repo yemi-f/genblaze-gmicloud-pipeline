@@ -29,6 +29,20 @@ export const IMAGE_MODELS: ModelInfo[] = [
     hint: "Strong prompt adherence, broad style range.",
   },
   {
+    id: "gemini-3.1-flash-image-preview",
+    label: "Gemini 3.1 Flash Image Preview",
+    provider: "Google",
+    tone: "blue",
+    hint: "Generates and edits images from text and image inputs with fast speed and balanced cost ",
+  },
+  {
+    id: "gpt-image-2-generate",
+    label: "GPT Image 2 Generate",
+    provider: "OpenAI",
+    tone: "blue",
+    hint: "Superior instruction following and accurate text rendering",
+  },
+  {
     id: "flux-kontext-pro",
     label: "FLUX Kontext Pro",
     provider: "Black Forest Labs",
